@@ -587,7 +587,10 @@ footer{padding:2.5rem 1rem 2rem; text-align:center; color:var(--ink-dim); font-s
 }
 
 /* === MASTER PIN SECURITY GATE STYLES === */
-body.app-locked > :not(#appLockScreen):not(#changePinModal) {
+body.app-locked {
+  overflow: hidden !important;
+}
+body.app-locked > :not(#appLockScreen) {
   display: none !important;
 }
 #appLockScreen {
@@ -598,14 +601,17 @@ body.app-locked > :not(#appLockScreen):not(#changePinModal) {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: env(safe-area-inset-top, 1.5rem) 1.5rem env(safe-area-inset-bottom, 1.5rem) 1.5rem;
   box-sizing: border-box;
   overflow-y: auto;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 #appLockScreen[hidden] {
   display: none !important;
 }
 .lock-card {
+  margin: auto;
   width: 100%;
   max-width: 420px;
   background: var(--surface);
@@ -841,10 +847,26 @@ body.app-locked > :not(#appLockScreen):not(#changePinModal) {
 </div>
 <script>
   try {
-    if (localStorage.getItem('wordkeep_pin_hash') && localStorage.getItem('wordkeep_device_auth') === 'true') {
+    var _st = JSON.parse(localStorage.getItem('wordkeep_store_v1') || '{}');
+    if (_st && _st.theme && _st.theme !== 'system') document.documentElement.setAttribute('data-theme', _st.theme);
+    var _hasPin = !!localStorage.getItem('wordkeep_pin_hash');
+    var _isAuth = localStorage.getItem('wordkeep_device_auth') === 'true';
+    var _isSess = sessionStorage.getItem('wordkeep_unlocked') === 'true';
+    var _ls = document.getElementById('appLockScreen');
+    if (_hasPin && (_isAuth || _isSess)) {
       document.body.classList.remove('app-locked');
-      var _ls = document.getElementById('appLockScreen');
       if (_ls) _ls.hidden = true;
+    } else if (!_hasPin) {
+      var _uf = document.getElementById('lockUnlockForm');
+      var _sf = document.getElementById('lockSetupForm');
+      var _t = document.getElementById('lockTitle');
+      var _s = document.getElementById('lockSub');
+      var _ic = document.getElementById('lockIcon');
+      if (_uf) _uf.style.display = 'none';
+      if (_sf) _sf.style.display = 'block';
+      if (_t) _t.textContent = 'Wordkeep Keamanan Pribadi';
+      if (_s) _s.textContent = 'Aplikasi ini bersifat pribadi. Buat PIN Rahasia (4–6 digit angka) untuk mengamankan data belajarmu.';
+      if (_ic) _ic.textContent = '🔐';
     }
   } catch(e){}
 </script>
@@ -14572,10 +14594,16 @@ function lockAppNow() {
     localStorage.removeItem(AUTH_KEY);
     sessionStorage.removeItem(SESS_KEY);
   } catch(e){}
+  if (typeof stopSpeech === 'function') stopSpeech();
+  if (typeof mockExamTimer !== 'undefined' && mockExamTimer) {
+    clearInterval(mockExamTimer);
+    mockExamTimer = null;
+  }
   document.body.classList.add('app-locked');
   const ls = document.getElementById('appLockScreen');
   if (ls) ls.hidden = false;
   setupLockScreenUI();
+  updatePinSettingsUI();
 }
 
 function setupLockScreenUI() {
@@ -14588,6 +14616,15 @@ function setupLockScreenUI() {
   const icon = document.getElementById('lockIcon');
   const pinInput = document.getElementById('lockPinInput');
   const newPinInput = document.getElementById('lockNewPin');
+  const confInput = document.getElementById('lockConfirmPin');
+  const toggleEye = document.getElementById('lockToggleEye');
+  const toggleEyeNew = document.getElementById('lockToggleEyeNew');
+
+  if (pinInput) { pinInput.type = 'password'; pinInput.value = ''; }
+  if (newPinInput) { newPinInput.type = 'password'; newPinInput.value = ''; }
+  if (confInput) { confInput.type = 'password'; confInput.value = ''; }
+  if (toggleEye) toggleEye.textContent = '👁️';
+  if (toggleEyeNew) toggleEyeNew.textContent = '👁️';
 
   if (!hasPin) {
     if (unlockForm) unlockForm.style.display = 'none';
@@ -14595,22 +14632,14 @@ function setupLockScreenUI() {
     if (title) title.textContent = 'Wordkeep Keamanan Pribadi';
     if (sub) sub.textContent = 'Aplikasi ini bersifat pribadi. Buat PIN Rahasia (4–6 digit angka) untuk mengamankan data belajarmu.';
     if (icon) icon.textContent = '🔐';
-    if (newPinInput) {
-      newPinInput.value = '';
-      const conf = document.getElementById('lockConfirmPin');
-      if (conf) conf.value = '';
-      setTimeout(() => newPinInput.focus(), 80);
-    }
+    if (newPinInput) setTimeout(() => newPinInput.focus(), 80);
   } else {
     if (setupForm) setupForm.style.display = 'none';
     if (unlockForm) unlockForm.style.display = 'block';
     if (title) title.textContent = 'Wordkeep Keamanan Pribadi';
     if (sub) sub.textContent = 'Aplikasi ini terkunci. Masukkan PIN Rahasia kamu untuk melanjutkan.';
     if (icon) icon.textContent = '🔒';
-    if (pinInput) {
-      pinInput.value = '';
-      setTimeout(() => pinInput.focus(), 80);
-    }
+    if (pinInput) setTimeout(() => pinInput.focus(), 80);
   }
 }
 
@@ -14748,6 +14777,16 @@ function initSecurityGate() {
   }
   if (closeChangeModal) closeChangeModal.addEventListener('click', hideChangeModal);
   if (cancelChangeBtn) cancelChangeBtn.addEventListener('click', hideChangeModal);
+  if (changeModal) {
+    changeModal.addEventListener('click', (e) => {
+      if (e.target === changeModal) hideChangeModal();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && changeModal && changeModal.style.display !== 'none') {
+      hideChangeModal();
+    }
+  });
 
   if (changePinForm) {
     changePinForm.addEventListener('submit', (e) => {
@@ -14794,6 +14833,33 @@ function initSecurityGate() {
     });
   }
 
+  // Real-time numeric-only input sanitization (max 6 digits)
+  ['lockPinInput', 'lockNewPin', 'lockConfirmPin', 'currentPinInput', 'newPinInput', 'confirmNewPinInput'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').slice(0, 6);
+      });
+    }
+  });
+
+  // Cross-tab synchronization & bfcache restoration
+  window.addEventListener('storage', (e) => {
+    if (e.key === AUTH_KEY && e.newValue !== 'true') {
+      lockAppNow();
+    }
+  });
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) {
+      const hasPin = !!getStoredPinHash();
+      const isAuth = isDeviceAuthorized();
+      const isSess = isSessionUnlocked();
+      if (!hasPin || (!isAuth && !isSess)) {
+        lockAppNow();
+      }
+    }
+  });
+
   // Initial gate check
   const hasPin = !!getStoredPinHash();
   const isAuth = isDeviceAuthorized();
@@ -14804,11 +14870,13 @@ function initSecurityGate() {
     const ls = document.getElementById('appLockScreen');
     if (ls) ls.hidden = true;
     renderDashboard();
+    updatePinSettingsUI();
   } else {
     document.body.classList.add('app-locked');
     const ls = document.getElementById('appLockScreen');
     if (ls) ls.hidden = false;
     setupLockScreenUI();
+    updatePinSettingsUI();
   }
 }
 

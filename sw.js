@@ -2,6 +2,7 @@ const CACHE_NAME = 'wordkeep-pwa-v5';
 const ASSETS = [
   './',
   './index.html',
+  './BahasaInggris_v2.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',

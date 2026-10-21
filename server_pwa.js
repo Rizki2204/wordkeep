@@ -13,7 +13,8 @@ const MIME_MAP = {
   '.json': 'application/manifest+json; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
   '.png': 'image/png',
-  '.ico': 'image/x-icon'
+  '.ico': 'image/x-icon',
+  '.txt': 'text/plain; charset=utf-8'
 };
 
 function getRealLanUrls(port) {
@@ -74,6 +75,8 @@ const server = http.createServer((req, res) => {
     relFile = 'icon-512.png';
   } else if (cleanPath.toLowerCase() === '/wordkeep.ico' || cleanPath.toLowerCase() === '/favicon.ico') {
     relFile = 'wordkeep.ico';
+  } else if (cleanPath.toLowerCase() === '/robots.txt') {
+    relFile = 'robots.txt';
   } else {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Not Found');
