@@ -793,8 +793,8 @@ body.app-locked > :not(#appLockScreen) {
     <div class="lock-icon-wrap" id="lockIconWrap">
       <span id="lockIcon">🔒</span>
     </div>
-    <h2 class="lock-title" id="lockTitle">Wordkeep Keamanan Pribadi</h2>
-    <p class="lock-sub" id="lockSub">Aplikasi ini bersifat pribadi. Masukkan PIN untuk membuka.</p>
+    <h2 class="lock-title" id="lockTitle">Wordkeep — Akses Pribadi Terkunci</h2>
+    <p class="lock-sub" id="lockSub">Aplikasi ini bersifat pribadi. Masukkan PIN keamanan pemilik untuk membuka:</p>
 
     <div class="lock-alert" id="lockAlert" style="display:none;" role="alert"></div>
 
@@ -849,24 +849,29 @@ body.app-locked > :not(#appLockScreen) {
   try {
     var _st = JSON.parse(localStorage.getItem('wordkeep_store_v1') || '{}');
     if (_st && _st.theme && _st.theme !== 'system') document.documentElement.setAttribute('data-theme', _st.theme);
-    var _hasPin = !!localStorage.getItem('wordkeep_pin_hash');
+    var MASTER_PIN_HASH = '1dc05c528061d352c2b99d4eb9772150a23116c64bbf964e8fbe87723061ff6c';
+    if (!localStorage.getItem('wordkeep_pin_hash')) {
+      try { localStorage.setItem('wordkeep_pin_hash', MASTER_PIN_HASH); } catch(e){}
+    }
     var _isAuth = localStorage.getItem('wordkeep_device_auth') === 'true';
     var _isSess = sessionStorage.getItem('wordkeep_unlocked') === 'true';
     var _ls = document.getElementById('appLockScreen');
-    if (_hasPin && (_isAuth || _isSess)) {
+    if (_isAuth || _isSess) {
       document.body.classList.remove('app-locked');
       if (_ls) _ls.hidden = true;
-    } else if (!_hasPin) {
+    } else {
+      document.body.classList.add('app-locked');
+      if (_ls) _ls.hidden = false;
       var _uf = document.getElementById('lockUnlockForm');
       var _sf = document.getElementById('lockSetupForm');
+      if (_uf) _uf.style.display = 'block';
+      if (_sf) _sf.style.display = 'none';
       var _t = document.getElementById('lockTitle');
       var _s = document.getElementById('lockSub');
       var _ic = document.getElementById('lockIcon');
-      if (_uf) _uf.style.display = 'none';
-      if (_sf) _sf.style.display = 'block';
-      if (_t) _t.textContent = 'Wordkeep Keamanan Pribadi';
-      if (_s) _s.textContent = 'Aplikasi ini bersifat pribadi. Buat PIN Rahasia (4–6 digit angka) untuk mengamankan data belajarmu.';
-      if (_ic) _ic.textContent = '🔐';
+      if (_t) _t.textContent = 'Wordkeep — Akses Pribadi Terkunci';
+      if (_s) _s.textContent = 'Aplikasi ini bersifat pribadi. Masukkan PIN keamanan pemilik untuk membuka:';
+      if (_ic) _ic.textContent = '🔒';
     }
   } catch(e){}
 </script>
@@ -14351,7 +14356,7 @@ if('serviceWorker' in navigator && typeof location !== 'undefined' && /^https?:/
       window.location.reload();
     }
   });
-  navigator.serviceWorker.register('./sw.js?v=5').then(reg => {
+  navigator.serviceWorker.register('./sw.js?v=6').then(reg => {
     try{ reg.update(); }catch(e){}
   }).catch(()=>{});
 }
@@ -14474,6 +14479,7 @@ if(resetProgressBtn){
 const PIN_KEY = 'wordkeep_pin_hash';
 const AUTH_KEY = 'wordkeep_device_auth';
 const SESS_KEY = 'wordkeep_unlocked';
+const MASTER_PIN_HASH = '1dc05c528061d352c2b99d4eb9772150a23116c64bbf964e8fbe87723061ff6c';
 
 function sha256Sync(ascii) {
   function rightRotate(value, amount) { return (value >>> amount) | (value << (32 - amount)); }
@@ -14536,7 +14542,7 @@ function hashPin(pin) {
 }
 
 function getStoredPinHash() {
-  try { return localStorage.getItem(PIN_KEY) || ''; } catch(e) { return ''; }
+  try { return localStorage.getItem(PIN_KEY) || MASTER_PIN_HASH; } catch(e) { return MASTER_PIN_HASH; }
 }
 
 function isDeviceAuthorized() {
@@ -14608,39 +14614,23 @@ function lockAppNow() {
 
 function setupLockScreenUI() {
   clearLockAlert('lockAlert');
-  const hasPin = !!getStoredPinHash();
   const unlockForm = document.getElementById('lockUnlockForm');
   const setupForm = document.getElementById('lockSetupForm');
   const title = document.getElementById('lockTitle');
   const sub = document.getElementById('lockSub');
   const icon = document.getElementById('lockIcon');
   const pinInput = document.getElementById('lockPinInput');
-  const newPinInput = document.getElementById('lockNewPin');
-  const confInput = document.getElementById('lockConfirmPin');
   const toggleEye = document.getElementById('lockToggleEye');
-  const toggleEyeNew = document.getElementById('lockToggleEyeNew');
 
   if (pinInput) { pinInput.type = 'password'; pinInput.value = ''; }
-  if (newPinInput) { newPinInput.type = 'password'; newPinInput.value = ''; }
-  if (confInput) { confInput.type = 'password'; confInput.value = ''; }
   if (toggleEye) toggleEye.textContent = '👁️';
-  if (toggleEyeNew) toggleEyeNew.textContent = '👁️';
 
-  if (!hasPin) {
-    if (unlockForm) unlockForm.style.display = 'none';
-    if (setupForm) setupForm.style.display = 'block';
-    if (title) title.textContent = 'Wordkeep Keamanan Pribadi';
-    if (sub) sub.textContent = 'Aplikasi ini bersifat pribadi. Buat PIN Rahasia (4–6 digit angka) untuk mengamankan data belajarmu.';
-    if (icon) icon.textContent = '🔐';
-    if (newPinInput) setTimeout(() => newPinInput.focus(), 80);
-  } else {
-    if (setupForm) setupForm.style.display = 'none';
-    if (unlockForm) unlockForm.style.display = 'block';
-    if (title) title.textContent = 'Wordkeep Keamanan Pribadi';
-    if (sub) sub.textContent = 'Aplikasi ini terkunci. Masukkan PIN Rahasia kamu untuk melanjutkan.';
-    if (icon) icon.textContent = '🔒';
-    if (pinInput) setTimeout(() => pinInput.focus(), 80);
-  }
+  if (setupForm) setupForm.style.display = 'none';
+  if (unlockForm) unlockForm.style.display = 'block';
+  if (title) title.textContent = 'Wordkeep — Akses Pribadi Terkunci';
+  if (sub) sub.textContent = 'Aplikasi ini bersifat pribadi. Masukkan PIN keamanan pemilik untuk membuka:';
+  if (icon) icon.textContent = '🔒';
+  if (pinInput) setTimeout(() => pinInput.focus(), 80);
 }
 
 function updatePinSettingsUI() {
