@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wordkeep-pwa-v4';
+const CACHE_NAME = 'wordkeep-pwa-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -50,7 +50,9 @@ self.addEventListener('fetch', (event) => {
           if (cached) return cached;
           const cachedIndex = await caches.match('./index.html');
           if (cachedIndex) return cachedIndex;
-          return caches.match('./');
+          const cachedRoot = await caches.match('./');
+          if (cachedRoot) return cachedRoot;
+          return Response.error();
         })
     );
     return;
@@ -66,6 +68,8 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         }
         return networkResponse;
+      }).catch(() => {
+        return new Response('', { status: 404, statusText: 'Offline Asset Not Found' });
       });
     })
   );

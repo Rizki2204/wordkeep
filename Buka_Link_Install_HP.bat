@@ -10,7 +10,11 @@ echo  https://rizki2204.github.io/wordkeep/
 echo.
 echo  Membuka link di browser default...
 echo ====================================================================
-start https://rizki2204.github.io/wordkeep/
+start "" "https://rizki2204.github.io/wordkeep/"
+echo https://rizki2204.github.io/wordkeep/| clip
+echo.
+echo  [OK] Link sudah otomatis disalin ke Clipboard!
+echo  (Tinggal tekan Ctrl+V di WA Web / Telegram untuk dikirim ke HP)
 echo.
 echo  Petunjuk Install di HP:
 echo  1. Buka https://rizki2204.github.io/wordkeep/ di Chrome (Android) atau Safari (iPhone).

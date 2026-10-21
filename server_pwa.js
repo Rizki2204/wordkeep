@@ -51,20 +51,28 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  let cleanPath = urlPath;
+  if (cleanPath.toLowerCase().startsWith('/wordkeep/')) {
+    cleanPath = cleanPath.slice(9);
+  } else if (cleanPath.toLowerCase() === '/wordkeep') {
+    cleanPath = '/';
+  }
+  if (!cleanPath.startsWith('/')) cleanPath = '/' + cleanPath;
+
   let relFile = 'index.html';
-  if (urlPath === '/' || urlPath === '/index.html') {
+  if (cleanPath === '/' || cleanPath === '/index.html') {
     relFile = 'index.html';
-  } else if (urlPath.toLowerCase() === '/bahasainggris_v2.html') {
+  } else if (cleanPath.toLowerCase() === '/bahasainggris_v2.html') {
     relFile = 'BahasaInggris_v2.html';
-  } else if (urlPath.toLowerCase() === '/manifest.json') {
+  } else if (cleanPath.toLowerCase() === '/manifest.json') {
     relFile = 'manifest.json';
-  } else if (urlPath.toLowerCase() === '/sw.js') {
+  } else if (cleanPath.toLowerCase() === '/sw.js') {
     relFile = 'sw.js';
-  } else if (urlPath.toLowerCase() === '/icon-192.png') {
+  } else if (cleanPath.toLowerCase() === '/icon-192.png') {
     relFile = 'icon-192.png';
-  } else if (urlPath.toLowerCase() === '/icon-512.png') {
+  } else if (cleanPath.toLowerCase() === '/icon-512.png') {
     relFile = 'icon-512.png';
-  } else if (urlPath.toLowerCase() === '/wordkeep.ico' || urlPath.toLowerCase() === '/favicon.ico') {
+  } else if (cleanPath.toLowerCase() === '/wordkeep.ico' || cleanPath.toLowerCase() === '/favicon.ico') {
     relFile = 'wordkeep.ico';
   } else {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
