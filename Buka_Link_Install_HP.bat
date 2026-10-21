@@ -1,8 +1,8 @@
 @echo off
-title Wordkeep — Link Resmi HP (PWA)
+title Wordkeep - Link Resmi HP (PWA)
 cd /d "%~dp0"
 echo ====================================================================
-echo  Wordkeep PWA — Link Resmi HP (Android / iPhone)
+echo  Wordkeep PWA - Link Resmi HP (Android / iPhone)
 echo ====================================================================
 echo.
 echo  Link Resmi Cloud (Aktif 24/7 Kapan Saja ^& Di Mana Saja):
